@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-module.exports = function authenticate(req, res, next) {
+function authenticate(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // format: "Bearer token"
 
@@ -17,13 +17,15 @@ module.exports = function authenticate(req, res, next) {
   } catch (err) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
-};
+}
 
-module.exports = function authorize(roles = []) {
+function authorize(roles = []) {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ message: "Access denied" });
     }
     next();
   };
-};
+}
+
+module.exports = { authenticate, authorize };
