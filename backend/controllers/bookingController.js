@@ -91,3 +91,45 @@ exports.getDoctorBookings = async (req, res) => {
     res.status(500).json({ error: "Server Error" });
   }
 };
+
+exports.updateBookingStatus = async (req, res) => {
+  const user_id = req.user.id;
+  const { booking_id } = req.params;
+  const { status } = req.body;
+
+  const validStatuses = ["pending", "approved", "rejected"];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: "Invalid status value" });
+  }
+
+  try {
+    const [doctorRows] = await pool.query(
+      "SELECT id FROM doctors WHERE user_id = ?",
+      [user_id]
+    );
+    if (doctorRows.length === 0)
+      return res.status(404).json({ error: "Doctor profile not found" });
+
+    const doctor_id = doctorRows[0].id;
+
+    const [rows] = await pool.query(
+      "SELECT * FROM bookings WHERE id = ? AND doctor_id = ?",
+      [booking_id, doctor_id]
+    );
+    if (rows.length === 0) {
+      return res.status(400).json({ error: "Booking not found" });
+    }
+
+    await pool.query("UPDATE bookings SET status = ? WHERE id = ?", [
+      status,
+      booking_id,
+    ]);
+
+    res.json({
+      message: "Status updated successfully",
+      booking: { ...rows[0], status },
+    });
+  } catch (err) {
+    return res.status(400).json({ error: "No bookings found" });
+  }
+};
